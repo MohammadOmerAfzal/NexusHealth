@@ -2,25 +2,12 @@
 import { useState, useEffect } from 'react';
 import { Bell, X, Check } from 'lucide-react';
 import { notificationApi } from '@/lib/api';
-import { useSocket } from '@/contexts/SocketContext';
+import { useSocket, AppNotification } from '@/contexts/SocketContext';
 import React from 'react';
-
-// Define the notification type locally to avoid conflict
-interface NotificationItem {
-  id: string;
-  userId: string;
-  type: string;
-  title: string;
-  message: string;
-  read: boolean;
-  createdAt: string;
-  appointmentId?: string;
-  _id?: string;
-}
 
 export default function NotificationBell() {
   const [showDropdown, setShowDropdown] = useState(false);
-  const [persistedNotifications, setPersistedNotifications] = useState<NotificationItem[]>([]);
+  const [persistedNotifications, setPersistedNotifications] = useState<AppNotification[]>([]);
   const { notifications: liveNotifications, markAsRead, connected } = useSocket();
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
@@ -46,7 +33,7 @@ export default function NotificationBell() {
 
   const fetchNotifications = async () => {
     try {
-      const response = await notificationApi.get<NotificationItem[]>('/api/notifications/my');
+      const response = await notificationApi.get<AppNotification[]>('/api/notifications/my');
       console.log('Fetched persisted notifications:', response.data);
       setPersistedNotifications(response.data);
     } catch (error) {
@@ -57,11 +44,13 @@ export default function NotificationBell() {
   // Combine live and persisted notifications, removing duplicates
   const allNotifications = React.useMemo(() => {
     const combined = [...liveNotifications, ...persistedNotifications];
-    const uniqueMap = new Map<string, NotificationItem>();
+    const uniqueMap = new Map<string, AppNotification>();
     
-    combined.forEach((notif: NotificationItem & { _id?: string }) => {
+    combined.forEach((notif: AppNotification) => {
+      // Use _id or id as the unique identifier
       const uniqueId = notif._id || notif.id;
       if (uniqueId && !uniqueMap.has(uniqueId)) {
+        // Normalize the notification object
         uniqueMap.set(uniqueId, {
           ...notif,
           id: uniqueId,
@@ -69,7 +58,6 @@ export default function NotificationBell() {
         });
       }
     });
-
     
     // Filter by current user and sort by date
     return Array.from(uniqueMap.values())
@@ -158,7 +146,7 @@ export default function NotificationBell() {
                       </div>
                       {!notif.read && (
                         <button
-                          onClick={() => handleMarkAsRead(notif.id)}
+                          onClick={() => handleMarkAsRead(notif._id || notif.id)}
                           className="text-blue-600 hover:text-blue-700 ml-2"
                           title="Mark as read"
                         >
