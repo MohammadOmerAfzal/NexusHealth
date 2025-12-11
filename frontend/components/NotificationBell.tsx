@@ -59,18 +59,17 @@ export default function NotificationBell() {
     const combined = [...liveNotifications, ...persistedNotifications];
     const uniqueMap = new Map<string, NotificationItem>();
     
-    combined.forEach(notif => {
-      // Use _id or id as the unique identifier
+    combined.forEach((notif: NotificationItem & { _id?: string }) => {
       const uniqueId = notif._id || notif.id;
       if (uniqueId && !uniqueMap.has(uniqueId)) {
-        // Normalize the notification object
         uniqueMap.set(uniqueId, {
           ...notif,
           id: uniqueId,
-          _id: notif._id || notif.id
+          _id: notif._id || notif.id,
         });
       }
     });
+
     
     // Filter by current user and sort by date
     return Array.from(uniqueMap.values())
