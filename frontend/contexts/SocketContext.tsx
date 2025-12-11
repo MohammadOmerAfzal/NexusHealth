@@ -4,6 +4,7 @@ import { io, Socket } from 'socket.io-client';
 
 interface AppNotification {
   id: string;
+  _id?: string;
   userId: string;
   type: string;
   title: string;
